@@ -1,0 +1,8 @@
+escenario=k8s-N2-R2
+host=172.21.53.194
+puerto=30080
+usuarios=10 50 100 200
+duracion_s=120
+rampa_s=20
+pausa_ms=100
+fecha=2026-11-15T22:30:22-05:00

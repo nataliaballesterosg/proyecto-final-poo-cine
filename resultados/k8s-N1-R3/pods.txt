@@ -1,0 +1,5 @@
+NAME                        READY   STATUS    RESTARTS   AGE     IP           NODE       NOMINATED NODE   READINESS GATES
+basedatos-b6449b487-ttgmx   1/1     Running   0          3h26m   10.42.0.6    vm-app-1   <none>           <none>
+cine-api-685f87fd9f-hrmhb   1/1     Running   0          2m47s   10.42.0.21   vm-app-1   <none>           <none>
+cine-api-685f87fd9f-j4h5v   1/1     Running   0          2m21s   10.42.0.22   vm-app-1   <none>           <none>
+cine-api-685f87fd9f-t4qgq   1/1     Running   0          89s     10.42.0.23   vm-app-1   <none>           <none>
