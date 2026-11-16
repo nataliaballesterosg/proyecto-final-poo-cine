@@ -1,0 +1,13 @@
+app/target/
+*.class
+.idea/
+.vscode/
+*.iml
+.ipynb_checkpoints/
+__pycache__/
+jmeter.log
+*.log
+.DS_Store
+
+# Archivos de JMeter mientras se escriben (run-pruebas.sh los comprime a .csv.gz)
+resultados/**/*.csv

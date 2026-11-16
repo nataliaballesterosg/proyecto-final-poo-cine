@@ -1,0 +1,46 @@
+# =====================================================================
+# FASE 1 - Despliegue con Docker Compose en una sola maquina
+#   docker compose up -d --build
+#   API disponible en http://<IP_DE_LA_VM>:8080/api/peliculas
+# =====================================================================
+services:
+
+  basedatos:
+    image: postgres:16-alpine
+    container_name: cine-db
+    environment:
+      POSTGRES_DB: cine
+      POSTGRES_USER: cine
+      POSTGRES_PASSWORD: cine
+    volumes:
+      - datos-postgres:/var/lib/postgresql/data          # datos persistentes
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro   # esquema + 11.210 registros
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cine -d cine"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build: ./app
+    image: cine-api:1.0
+    container_name: cine-api
+    environment:
+      DB_URL: jdbc:postgresql://basedatos:5432/cine
+      DB_USUARIO: cine
+      DB_CLAVE: cine
+      NODO: docker-compose
+    ports:
+      - "8080:8080"
+    depends_on:
+      basedatos:
+        condition: service_healthy       # espera a que la BD este lista
+    # Mismos recursos que UNA replica en Kubernetes (ver k8s/03-api.yaml),
+    # para que la comparacion entre escenarios sea justa.
+    cpus: "1.0"
+    mem_limit: 768m
+    restart: unless-stopped
+
+volumes:
+  datos-postgres:
