@@ -1,0 +1,5 @@
+# Espacio de nombres donde vive todo el proyecto
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cine

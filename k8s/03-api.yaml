@@ -1,0 +1,82 @@
+# =====================================================================
+# API REST (Spring Boot). Es el servicio que se ESCALA HORIZONTALMENTE:
+#   kubectl scale deployment cine-api -n cine --replicas=3
+# (o con el script k8s/escalar.sh)
+# =====================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cine-api
+  namespace: cine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cine-api
+  template:
+    metadata:
+      labels:
+        app: cine-api
+    spec:
+      # Reparte las replicas entre los nodos: la diferencia de pods entre
+      # dos nodos nunca puede ser mayor que 1 (maxSkew). Ej: 3 replicas en
+      # 2 nodos -> 2 + 1; en 3 nodos -> 1 + 1 + 1.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule      # regla obligatoria, no solo preferencia
+          labelSelector:
+            matchLabels:
+              app: cine-api
+          matchLabelKeys: [pod-template-hash]   # solo cuenta los pods de la version nueva al reiniciar
+      containers:
+        - name: api
+          image: TU_USUARIO/cine-api:1.0      # desplegar.sh lo reemplaza por $IMAGEN
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              value: jdbc:postgresql://basedatos:5432/cine
+            - name: DB_USUARIO
+              valueFrom:
+                secretKeyRef: { name: credenciales-db, key: POSTGRES_USER }
+            - name: DB_CLAVE
+              valueFrom:
+                secretKeyRef: { name: credenciales-db, key: POSTGRES_PASSWORD }
+            - name: NODO                       # nodo donde corre el pod (se ve en /api/info)
+              valueFrom:
+                fieldRef: { fieldPath: spec.nodeName }
+          # Cada replica tiene los mismos recursos que el contenedor de Docker Compose
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          # Kubernetes solo envia trafico al pod cuando esta listo
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 60
+            periodSeconds: 10
+---
+# Servicio NodePort: la API queda expuesta en el puerto 30080 de CUALQUIER nodo
+# y Kubernetes balancea las peticiones entre todas las replicas.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cine-api
+  namespace: cine
+spec:
+  type: NodePort
+  selector:
+    app: cine-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
